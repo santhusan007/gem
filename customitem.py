@@ -298,19 +298,22 @@ class Gem():
             # Destination of moved directory
         return (print("files moved"))
 
-src = "C:/Users/Admin/Downloads"
-dst = "D:/Gem1/"
 
-data=Gem(src,dst)
+if __name__=="__main__":
 
-#print(data.latestDownload())
-#data.move_file()
-items=['HSS SLITTING SAW','HSS']
-url = 'https://bidplus.gem.gov.in/custom-item'
-#data.itemwise_download(url,items)
+    src = "C:/Users/Admin/Downloads"
+    dst = "D:/Gem1/"
 
-pdf_file_list=data.pdf_list()
-pdf_file_list=pdf_file_list[:3]
-#data.data_to_csv(pdf_file_list)
-#data.link_download(pdf_file_list)
-data.move_pdf_file(pdf_file_list)
+    data=Gem(src,dst)
+
+    #print(data.latestDownload())
+    #data.move_file()
+    items=['HSS SLITTING SAW','HSS']
+    url = 'https://bidplus.gem.gov.in/custom-item'
+    #data.itemwise_download(url,items)
+
+    pdf_file_list=data.pdf_list()
+    pdf_file_list=pdf_file_list[:3]
+    #data.data_to_csv(pdf_file_list)
+    #data.link_download(pdf_file_list)
+    data.move_pdf_file(pdf_file_list)
