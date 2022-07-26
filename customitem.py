@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 import os
 from os import path
 import shutil
+from sklearn.manifold import trustworthiness
 import tabula
 import glob
 import pikepdf
@@ -84,12 +85,17 @@ class Gem():
                 By.XPATH, '//*[@id="exTab2"]/div[1]/div[2]/form/div/span/button/span').click()
 
             linklist = []
+            
             for j in range(1, 10):
                 try:
                     # Extracting the text from the link element
+
                     link = driver.find_element(
                         By.XPATH, f'//*[@id="pagi_content"]/div[{j}]/div[1]/p[1]/a').text
-                    linklist.append(link)
+                    if(link):
+                        linklist.append(link)
+                    else:
+                        break
 
                 except Exception as e:
                     print("error", str(e))
@@ -180,11 +186,11 @@ class Gem():
             Emd_pattern = 'DocumentEMD DetailRequired([a-zA-Z]*)'
             Emd = self.dataExtraction(Emd_pattern, pdftext)
 
-            ePBG_pattern = 'ePBG DetailRequired([a-zA-Z]*)'
-            ePBG = self.dataExtraction(ePBG_pattern, pdftext)
+            # ePBG_pattern = 'ePBG DetailRequired([a-zA-Z]*)'
+            # ePBG = self.dataExtraction(ePBG_pattern, pdftext)
 
-            place1_pattern = 'Delivery Days1\**([\w][\D]*)'
-            place1 = self.dataExtraction(place1_pattern, pdftext)
+            # place1_pattern = 'Delivery Days1\**([\w][\D]*)'
+            # place1 = self.dataExtraction(place1_pattern, pdftext)
 
             try:
                 mseindex = df[0][df[0]['Unnamed: 0'].str.contains(
@@ -195,43 +201,40 @@ class Gem():
                 print("error", str(e))
                 pass
             new_df = [[
-                tender_no, tender_date, place, place1, ePBG, Emd,
+                tender_no, tender_date, place,Emd,
                 df[0]['Bid Details'][0],  # Bid End
-                df[0]['Bid Details'][1],  # Bid Open
-                df[0]['Bid Details'][4],  # Ministry Name
+                # df[0]['Bid Details'][1],  # Bid Open
+                # df[0]['Bid Details'][4],  # Ministry Name
                 df[0]['Bid Details'][5],  # Department Name
-                df[0]['Bid Details'][6],  # Oranization name
-                df[0]['Bid Details'][7],  # Office Name
-                df[0]['Bid Details'][8],  # Total Qunatity
-                df[0]['Bid Details'][9],  # Item Category
+                # df[0]['Bid Details'][6],  # Oranization name
+                df[0]['Bid Details'][7], # Total Qunatity
+                df[0]['Bid Details'][8],  # Item Category
+                # df[0]['Bid Details'][9],  # Item Category
                 msevalue
 
             ]]
-            columns = ['tender_no', 'Date', 'place_of_supply', 'place1',
-                       'ePBG', 'Emd', 'Bid End Date/Time',
-                       'Bid Opening Date/Time',
-                       'Ministry Name', 'Department Name',
-                       'Organisation Name', 'office Name',
-                       'Total Quantity', 'Item Category', 'MSE Exemption']
+            columns = ['tender_no', 'Date', 'place_of_supply',
+                       'Emd', 'Bid End Date/Time',
+                       'Department Name','Total Qunatity',
+                       'Item Category','MSE Exemption']
 
             new_df = pd.DataFrame(new_df, columns=columns)
 
-            if os.path.isfile("D:\\Gem1\\gem1.csv"):
-                new_df.to_csv("D:\\Gem1\\gem1.csv", index=False,
+            if os.path.isfile("D:\\Gem2\\gem1.csv"):
+                new_df.to_csv("D:\\Gem2\\gem1.csv", index=False,
                               header=False, mode='a')
             else:
-                new_df.to_csv("D:\\Gem1\\gem1.csv", index=False)
+                new_df.to_csv("D:\\Gem2\\gem1.csv", index=False)
         return new_df
 
     def tenderNum(self, file):
-
         tender_no = file.split('\\')[1].replace('.pdf', '')
         return tender_no
 
     def tenderFolder(self, file):
         tender_no = self.tenderNum(file)
         directory = tender_no
-        folder_location = os.path.join(self.src, directory)
+        folder_location = os.path.join(self.dst, directory)
         if not os.path.exists(folder_location):
             os.mkdir(folder_location)
         yield folder_location
@@ -246,7 +249,8 @@ class Gem():
                 for annots in page.get("/Annots"):
                     try:
                         uri = annots.get("/A").get("/URI")
-                        urls.append(uri)
+                        urls.append(str(uri))
+                        uri=str(uri)
                     except Exception as e:
                         print("error", str(e))
                         pass
@@ -254,22 +258,32 @@ class Gem():
                         #print("[+] URL founs",uri)
                         # print(str(uri))
                         # do not download the file with terms and conditions
-                        if str(uri).endswith("termsCondition"):
+                        if uri.endswith("termsCondition"):
                             pass
                         else:
                             # Download the CSV, PDF, WOrd or excel file
-                            if str(uri).endswith(".pdf") or str(uri).endswith(".csv") or str(uri).endswith(".docx") or str(uri).endswith(".xlsx"):
+                            if uri.endswith(".pdf") or uri.endswith(".csv") or uri.endswith(".docx") or uri.endswith(".xlsx"):
                                 filename = os.path.join(
-                                    folder_location, str(uri).split("/")[-1])
-                                r = requests.get(str(uri), stream=True)
-                                print("Saving to", filename)
-                                with open(filename, 'wb') as f:
-                                    f.write(r.content)
+                                    folder_location, uri.split("/")[-1])
+                                # with requests.get(uri, stream=True) as r:
+                                #     r.raise_for_status()                                
+                                #     print("Saving to", filename)
+                                #     with open(filename, 'wb') as f:
+                                #         for chunk in r.iter_content(chunk_size=1024): 
+                                #             # If you have chunk encoded response uncomment if
+                                #             # and set chunk_size parameter to None.
+                                #             #if chunk: 
+                                #             f.write(chunk)   
+                                # 
+                                with requests.get(uri, stream=True) as r:
+                                    print("Saving to", filename)
+                                    with open(filename, 'wb') as f:
+                                            shutil.copyfileobj(r.raw, f)                                        
 
                             else:
                                 try:
                                     # Download the table directly from website
-                                    html = requests.get(str(uri))
+                                    html = requests.get(uri)
                                     soup = BeautifulSoup(html.text, 'lxml')
                                     tables = soup.find_all('table')
                                     df = pd.read_html(str(tables[0]))[0]
@@ -286,34 +300,12 @@ class Gem():
         for file in pdf_file_list:
             source = file
             tender_no = file.split('\\')[1].replace('.pdf', '')
-
             # Destination path
-            destination = f"D:\\Gem1\\{tender_no}"
-
+            destination = f"D:\\Gem2\\{tender_no}"
             # Move the content of
             # source to destination
             dest = shutil.move(source, destination)
-
             # print(dest) prints the
             # Destination of moved directory
         return (print("files moved"))
 
-
-if __name__=="__main__":
-
-    src = "C:/Users/Admin/Downloads"
-    dst = "D:/Gem1/"
-
-    data=Gem(src,dst)
-
-    #print(data.latestDownload())
-    #data.move_file()
-    items=['HSS SLITTING SAW','HSS']
-    url = 'https://bidplus.gem.gov.in/custom-item'
-    #data.itemwise_download(url,items)
-
-    pdf_file_list=data.pdf_list()
-    pdf_file_list=pdf_file_list[:3]
-    #data.data_to_csv(pdf_file_list)
-    #data.link_download(pdf_file_list)
-    data.move_pdf_file(pdf_file_list)
