@@ -276,9 +276,13 @@ class Gem():
                                 #             f.write(chunk)   
                                 # 
                                 with requests.get(uri, stream=True) as r:
-                                    print("Saving to", filename)
-                                    with open(filename, 'wb') as f:
-                                            shutil.copyfileobj(r.raw, f)                                        
+                                    if r.status_code == 200:
+                                        print("Saving to", filename)
+                                        with open(filename, 'wb') as f:
+                                                shutil.copyfileobj(r.raw, f)  
+
+                                    else:
+                                        pass                                      
 
                             else:
                                 try:
@@ -294,6 +298,7 @@ class Gem():
                                     pass
 
             pdf_file.close()
+
         return urls
 
     def move_pdf_file(self,pdf_file_list):
