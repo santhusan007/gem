@@ -1,0 +1,13 @@
+requests
+pandas
+BeautifulSoup
+time
+selenium
+os
+shutil
+tabula
+glob
+pikepdf
+pdfminer
+io
+re
